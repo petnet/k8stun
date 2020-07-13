@@ -1,0 +1,18 @@
+{
+    "Tunnels": [
+        {
+            "LabelSelector": "app=mailcatcher",
+            "Namespace": "default",
+            "Name": "mailcatcher-web",
+            "ListenPort": 1080,
+            "TargetPort": 1080
+        },
+        {
+            "LabelSelector": "app=mailcatcher",
+            "Namespace": "default",
+            "Name": "mailcatcher-smtp",
+            "ListenPort": 1025,
+            "TargetPort": 1025
+        }
+    ]
+}
