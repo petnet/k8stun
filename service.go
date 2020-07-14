@@ -12,8 +12,8 @@ func NewService(config *rest.Config, tunnels []Tunnel) *Service {
 		wg:      &sync.WaitGroup{},
 		tunnels: []*Tunnel{},
 	}
-	for _, tun := range tunnels {
-		svc.tunnels = append(svc.tunnels, tun.Initialize(svc.wg, config))
+	for id, tun := range tunnels {
+		svc.tunnels = append(svc.tunnels, tun.Initialize(id, svc.wg, config))
 	}
 	return svc
 }

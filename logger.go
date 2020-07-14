@@ -3,18 +3,40 @@ package k8stun
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
-// Logger implements formatted logging via io.Writer
+const (
+	Reset  = "\033[0m"
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Blue   = "\033[34m"
+	Purple = "\033[35m"
+	Cyan   = "\033[36m"
+	Gray   = "\033[37m"
+	White  = "\033[97m"
+)
+
+var colors = []string{Green, Yellow, Blue, Purple, Cyan, White, Gray}
+
+// Logger implements formatted logging for tunnels via io.Writer
 type Logger struct {
 	t     *Tunnel
 	Label string
 }
 
+func (tl *Logger) color() string {
+	return colors[tl.t.id%len(colors)]
+}
+
 // Write implements io.Writer
 func (tl *Logger) Write(out []byte) (int, error) {
-	log.Printf("%s %s> %s\n",
-		tl.t.Name, tl.Label, string(out),
+	msg := strings.TrimSpace(string(out))
+	log.Printf("%s %s %s> %s %s",
+		tl.color(),
+		tl.t.Name, tl.Label, msg,
+		Reset,
 	)
 	return len(out), nil
 }
