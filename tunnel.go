@@ -17,6 +17,7 @@ import (
 
 // Tunnel manages one portforward instance
 type Tunnel struct {
+	id            int
 	Name          string
 	Namespace     string
 	LabelSelector string
@@ -33,8 +34,9 @@ type Tunnel struct {
 }
 
 // Initialize ...
-func (tun Tunnel) Initialize(wg *sync.WaitGroup, config *rest.Config) *Tunnel {
+func (tun Tunnel) Initialize(id int, wg *sync.WaitGroup, config *rest.Config) *Tunnel {
 	t := &tun
+	t.id = id
 	t.outLog = &Logger{t: t, Label: "💬"}
 	t.errLog = &Logger{t: t, Label: "💢"}
 	t.stopChan = make(chan struct{})
@@ -100,14 +102,14 @@ func (tun *Tunnel) run() {
 
 // Start ...
 func (tun *Tunnel) Start() {
-	tun.outLog.Printf("starting")
+	tun.outLog.Printf("starting tunnel")
 	go tun.run()
 	<-tun.readyChan
 }
 
 // Stop ...
 func (tun *Tunnel) Stop() {
-	tun.outLog.Printf("stopping")
+	tun.outLog.Printf("stopping tunnel")
 	defer func() {
 		if r := recover(); r != nil {
 			tun.errLog.Printf("recovered in %v", r)
