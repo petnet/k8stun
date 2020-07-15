@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 
@@ -52,7 +53,10 @@ func main() {
 	}
 
 	// uses the current context in kubeconfig
-	restConfig, _ := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	if err != nil {
+		log.Panicf("error: %s", err.Error())
+	}
 
 	// Start service
 	svc := k8stun.NewService(restConfig, cfg.Tunnels)
