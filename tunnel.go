@@ -7,7 +7,9 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
+	backoff "github.com/cenkalti/backoff/v4"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -31,6 +33,7 @@ type Tunnel struct {
 	running    bool
 	errLog     *Logger
 	outLog     *Logger
+	bo         backoff.BackOff
 }
 
 // Initialize ...
@@ -43,10 +46,14 @@ func (tun Tunnel) Initialize(id int, wg *sync.WaitGroup, config *rest.Config) *T
 	t.readyChan = make(chan struct{})
 	t.wg = wg
 	t.config = config
+	t.bo = backoff.NewExponentialBackOff()
 	return t
 }
 
-func (tun *Tunnel) run() {
+func (tun *Tunnel) run() error {
+	tun.running = true
+	tun.outLog.Printf("starting tunnel")
+
 	tun.wg.Add(1)
 	defer tun.wg.Done()
 
@@ -59,11 +66,11 @@ func (tun *Tunnel) run() {
 	})
 	if err != nil {
 		tun.errLog.Printf("error finding pod: %s", err)
-		return
+		return err
 	}
 	if len(pods.Items) == 0 {
 		tun.errLog.Printf("no pods matching selector found")
-		return
+		return err
 	}
 	podName := pods.Items[0].Name
 	tun.outLog.Printf("creating tunnel for pod %s", podName)
@@ -76,8 +83,7 @@ func (tun *Tunnel) run() {
 	)
 	transport, upgrader, err := spdy.RoundTripperFor(tun.config)
 	if err != nil {
-		tun.errLog.Printf("Error creating roundtripper: %s", err)
-		return
+		return fmt.Errorf("Error creating roundtripper: %s", err)
 	}
 	dialer := spdy.NewDialer(upgrader,
 		&http.Client{Transport: transport}, http.MethodPost,
@@ -90,25 +96,51 @@ func (tun *Tunnel) run() {
 		tun.stopChan, tun.readyChan,
 		tun.outLog, tun.errLog)
 	if err != nil {
-		tun.errLog.Printf("error creating new tunnel: %s", err)
-		return
+		return fmt.Errorf("error creating new tunnel: %w", err)
 	}
 
 	// Start forwarder
 	if err := fw.ForwardPorts(); err != nil {
-		tun.errLog.Printf("portforward err: %s", err)
+		return fmt.Errorf("portforward err: %w", err)
 	}
+
+	return nil
+}
+
+// NextBackOff implements backoff.Backoff interface
+func (tun *Tunnel) NextBackOff() time.Duration {
+	if !tun.running {
+		return backoff.Stop
+	}
+	return tun.bo.NextBackOff()
+}
+
+// Reset implements backoff.Backoff interface
+func (tun *Tunnel) Reset() {
+	tun.bo.Reset()
+}
+
+func (tun *Tunnel) runUntilStopped() {
+	backoff.RetryNotify(
+		tun.run,
+		tun,
+		func(err error, d time.Duration) {
+			tun.errLog.Printf(
+				"tunnel failed: %s, waiting %s",
+				err, d.Truncate(time.Millisecond))
+		},
+	)
 }
 
 // Start ...
 func (tun *Tunnel) Start() {
-	tun.outLog.Printf("starting tunnel")
-	go tun.run()
+	go tun.runUntilStopped()
 	<-tun.readyChan
 }
 
 // Stop ...
 func (tun *Tunnel) Stop() {
+	tun.running = false
 	tun.outLog.Printf("stopping tunnel")
 	defer func() {
 		if r := recover(); r != nil {
