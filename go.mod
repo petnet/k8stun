@@ -1,4 +1,4 @@
-module k8stun
+module github.com/petnet/k8stun
 
 go 1.14
 
