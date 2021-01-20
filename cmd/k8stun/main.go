@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd"
 
-	"k8stun"
+	"github.com/petnet/k8stun"
 )
 
 var (
