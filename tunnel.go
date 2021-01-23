@@ -20,20 +20,19 @@ import (
 // Tunnel manages one portforward instance
 type Tunnel struct {
 	id            int
-	Name          string
-	Namespace     string
-	LabelSelector string
-	// ListenAddress string
-	ListenPort int
-	TargetPort int
-	config     *rest.Config
-	stopChan   chan struct{}
-	readyChan  chan struct{}
-	wg         *sync.WaitGroup
-	running    bool
-	errLog     *Logger
-	outLog     *Logger
-	bo         backoff.BackOff
+	Name          string `yaml:"name"`
+	Namespace     string `yaml:"namespace"`
+	LabelSelector string `yaml:"labelSelector"`
+	ListenPort    int    `yaml:"listenPort"`
+	TargetPort    int    `yaml:"targetPort"`
+	config        *rest.Config
+	stopChan      chan struct{}
+	readyChan     chan struct{}
+	wg            *sync.WaitGroup
+	running       bool
+	errLog        *Logger
+	outLog        *Logger
+	bo            backoff.BackOff
 }
 
 // Initialize ...

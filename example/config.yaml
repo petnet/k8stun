@@ -1,0 +1,12 @@
+---
+tunnels:
+- labelSelector: app=mailcatcher
+  namespace: default
+  name: mailcatcher-web
+  listenPort: 1080
+  targetPort: 1080
+- labelSelector: app=mailcatcher
+  namespace: default
+  name: mailcatcher-smtp
+  listenPort: 1025
+  targetPort: 1025
