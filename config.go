@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Tunnels []Tunnel
+	Tunnels []Tunnel `yaml:"tunnels"`
 }
 
 // LoadConfig ...
@@ -16,14 +19,21 @@ func LoadConfig(configFile string) (Config, error) {
 	file, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return cfg, fmt.Errorf(
-			"Unable to read config file '%s' %v\n",
+			"unable to read config file '%s' %v",
 			configFile, err)
 	}
 
-	err = json.Unmarshal(file, &cfg)
+	type unmarshaler func([]byte, interface{}) error
+	var parse unmarshaler = json.Unmarshal
+	if strings.HasSuffix(strings.ToLower(configFile), "yaml") ||
+		strings.HasSuffix(strings.ToLower(configFile), "yml") {
+		parse = yaml.Unmarshal
+	}
+
+	err = parse(file, &cfg)
 	if err != nil {
 		return cfg, fmt.Errorf(
-			"Unable to parse config file: %s -- %s\n",
+			"unable to parse config file: %s -- %s",
 			configFile, err)
 	}
 
