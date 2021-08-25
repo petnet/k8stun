@@ -59,10 +59,12 @@ func (tun *Tunnel) run() error {
 	// Find pod that matches selector
 	ctx := context.Background()
 	clientset, _ := kubernetes.NewForConfig(tun.config)
-	pods, err := clientset.CoreV1().Pods("").List(ctx, v1.ListOptions{
-		Limit:         1,
-		LabelSelector: tun.LabelSelector,
-	})
+	pods, err := clientset.CoreV1().
+		Pods(tun.Namespace).
+		List(ctx, v1.ListOptions{
+			Limit:         1,
+			LabelSelector: tun.LabelSelector,
+		})
 	if err != nil {
 		tun.errLog.Printf("error finding pod: %s", err)
 		return err
