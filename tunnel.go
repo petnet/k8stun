@@ -2,6 +2,7 @@ package k8stun
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -70,8 +71,7 @@ func (tun *Tunnel) run() error {
 		return err
 	}
 	if len(pods.Items) == 0 {
-		tun.errLog.Printf("no pods matching selector found")
-		return err
+		return errors.New("no pods matching selector found")
 	}
 	podName := pods.Items[0].Name
 	tun.outLog.Printf("creating tunnel for pod %s", podName)
@@ -84,7 +84,7 @@ func (tun *Tunnel) run() error {
 	)
 	transport, upgrader, err := spdy.RoundTripperFor(tun.config)
 	if err != nil {
-		return fmt.Errorf("Error creating roundtripper: %s", err)
+		return fmt.Errorf("error creating roundtripper: %s", err)
 	}
 	dialer := spdy.NewDialer(upgrader,
 		&http.Client{Transport: transport}, http.MethodPost,
